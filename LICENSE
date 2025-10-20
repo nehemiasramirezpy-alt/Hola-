@@ -1,21 +1,210 @@
-MIT License
+-- Ezequiel.lua
+-- UNIVERSAL GUI PARA ROBLOX
+-- Compatible con cualquier executor que cargue scripts de Roblox
+-- Autor: Nehemías
 
-Copyright (c) 2025 nehemiasramirezpy-alt
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local UIS = game:GetService("UserInputService")
+local RS = game:GetService("RunService")
+local StarterGui = game:GetService("StarterGui")
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+-- Crear GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "EzequielGUI"
+gui.ResetOnSpawn = false
+gui.Parent = game.CoreGui or LocalPlayer:WaitForChild("PlayerGui")
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+-- Botón flotante
+local toggleBtn = Instance.new("TextButton")
+toggleBtn.Size = UDim2.new(0, 80, 0, 35)
+toggleBtn.Position = UDim2.new(0.05, 0, 0.3, 0)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(25,25,25)
+toggleBtn.Text = "Mostrar GUI"
+toggleBtn.TextColor3 = Color3.fromRGB(255,255,255)
+toggleBtn.Font = Enum.Font.FredokaOne
+toggleBtn.TextSize = 16
+toggleBtn.Draggable = true
+toggleBtn.Parent = gui
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+-- Frame principal
+local main = Instance.new("Frame")
+main.Size = UDim2.new(0,250,0,320)
+main.Position = UDim2.new(0.35,0,0.25,0)
+main.BackgroundColor3 = Color3.fromRGB(30,30,30)
+main.Visible = false
+main.Draggable = true
+main.Parent = gui
+Instance.new("UICorner", main).CornerRadius = UDim.new(0,20)
+
+-- Título
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1,0,0,40)
+title.BackgroundTransparency = 1
+title.Text = "Ezequiel"
+title.Font = Enum.Font.FredokaOne
+title.TextColor3 = Color3.fromRGB(255,255,255)
+title.TextSize = 24
+title.Parent = main
+
+-- Botón minimizar
+local minimize = Instance.new("TextButton")
+minimize.Size = UDim2.new(0,30,0,30)
+minimize.Position = UDim2.new(1,-35,0,5)
+minimize.Text = "-"
+minimize.BackgroundColor3 = Color3.fromRGB(50,50,50)
+minimize.TextColor3 = Color3.fromRGB(255,255,255)
+minimize.Font = Enum.Font.FredokaOne
+minimize.TextSize = 18
+minimize.Parent = main
+Instance.new("UICorner", minimize).CornerRadius = UDim.new(0,10)
+
+-- ScrollFrame para botones
+local scroll = Instance.new("ScrollingFrame")
+scroll.Size = UDim2.new(1,0,1,-40)
+scroll.Position = UDim2.new(0,0,0,40)
+scroll.CanvasSize = UDim2.new(0,0,2,0)
+scroll.ScrollBarThickness = 4
+scroll.BackgroundTransparency = 1
+scroll.Parent = main
+
+-- Función para crear botones
+local function newButton(text)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(0.9,0,0,35)
+	btn.Position = UDim2.new(0.05,0,0,0)
+	btn.BackgroundColor3 = Color3.fromRGB(45,45,45)
+	btn.Text = text
+	btn.TextColor3 = Color3.fromRGB(255,255,255)
+	btn.Font = Enum.Font.FredokaOne
+	btn.TextSize = 18
+	btn.Parent = scroll
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0,10)
+	return btn
+end
+
+-- Crear botones
+local flyBtn = newButton("Fly [OFF]")
+local noclipBtn = newButton("Noclip [OFF]")
+local invisBtn = newButton("Invisible [OFF]")
+local tpBtn = newButton("Teleport Jugador")
+local spamBtn = newButton("Chat Spammer [OFF]")
+
+-- Posicionar botones
+local offset = 10
+for i, btn in ipairs(scroll:GetChildren()) do
+	if btn:IsA("TextButton") then
+		btn.Position = UDim2.new(0.05,0,0,offset)
+		offset = offset + 45
+	end
+end
+
+-- SISTEMAS
+
+-- Fly
+local flying = false
+local flySpeed = 50
+local bodyGyro, bodyVel
+
+flyBtn.MouseButton1Click:Connect(function()
+	flying = not flying
+	flyBtn.Text = flying and "Fly [ON]" or "Fly [OFF]"
+	if flying then
+		local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+		local hrp = char:WaitForChild("HumanoidRootPart")
+		bodyGyro = Instance.new("BodyGyro", hrp)
+		bodyGyro.P = 9e4
+		bodyGyro.MaxTorque = Vector3.new(9e9,9e9,9e9)
+		bodyVel = Instance.new("BodyVelocity", hrp)
+		bodyVel.Velocity = Vector3.zero
+		bodyVel.MaxForce = Vector3.new(9e9,9e9,9e9)
+
+		RS:BindToRenderStep("Fly", Enum.RenderPriority.Character.Value, function()
+			if flying then
+				bodyGyro.CFrame = workspace.CurrentCamera.CFrame
+				local moveDir = Vector3.zero
+				if UIS:IsKeyDown(Enum.KeyCode.W) then moveDir += workspace.CurrentCamera.CFrame.LookVector end
+				if UIS:IsKeyDown(Enum.KeyCode.S) then moveDir -= workspace.CurrentCamera.CFrame.LookVector end
+				if UIS:IsKeyDown(Enum.KeyCode.A) then moveDir -= workspace.CurrentCamera.CFrame.RightVector end
+				if UIS:IsKeyDown(Enum.KeyCode.D) then moveDir += workspace.CurrentCamera.CFrame.RightVector end
+				bodyVel.Velocity = moveDir * flySpeed
+			else
+				RS:UnbindFromRenderStep("Fly")
+				if bodyGyro then bodyGyro:Destroy() end
+				if bodyVel then bodyVel:Destroy() end
+			end
+		end)
+	else
+		if bodyGyro then bodyGyro:Destroy() end
+		if bodyVel then bodyVel:Destroy() end
+		RS:UnbindFromRenderStep("Fly")
+	end
+end)
+
+-- Noclip
+local noclip = false
+noclipBtn.MouseButton1Click:Connect(function()
+	noclip = not noclip
+	noclipBtn.Text = noclip and "Noclip [ON]" or "Noclip [OFF]"
+	RS.Stepped:Connect(function()
+		if noclip and LocalPlayer.Character then
+			for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+				if part:IsA("BasePart") then
+					part.CanCollide = false
+				end
+			end
+		end
+	end)
+end)
+
+-- Invisibilidad
+local invisible = false
+invisBtn.MouseButton1Click:Connect(function()
+	invisible = not invisible
+	invisBtn.Text = invisible and "Invisible [ON]" or "Invisible [OFF]"
+	local char = LocalPlayer.Character
+	if not char then return end
+	for _, part in pairs(char:GetDescendants()) do
+		if part:IsA("BasePart") or part:IsA("Decal") then
+			part.Transparency = invisible and 1 or 0
+		end
+	end
+end)
+
+-- Teleport a jugador
+tpBtn.MouseButton1Click:Connect(function()
+	local names = {}
+	for _, p in pairs(Players:GetPlayers()) do
+		if p ~= LocalPlayer then table.insert(names, p.Name) end
+	end
+	local chosen = names[math.random(1,#names)]
+	local target = Players:FindFirstChild(chosen)
+	if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+		LocalPlayer.Character:MoveTo(target.Character.HumanoidRootPart.Position + Vector3.new(0,3,0))
+	end
+end)
+
+-- Chat Spammer
+local spamming = false
+spamBtn.MouseButton1Click:Connect(function()
+	spamming = not spamming
+	spamBtn.Text = spamming and "Chat Spammer [ON]" or "Chat Spammer [OFF]"
+	if spamming then
+		spawn(function()
+			while spamming do
+				game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer("Ezequiel GUI 😎","All")
+				wait(1)
+			end
+		end)
+	end
+end)
+
+-- Botones de visibilidad
+toggleBtn.MouseButton1Click:Connect(function()
+	main.Visible = not main.Visible
+	toggleBtn.Text = main.Visible and "Ocultar GUI" or "Mostrar GUI"
+end)
+
+minimize.MouseButton1Click:Connect(function()
+	scroll.Visible = not scroll.Visible
+end)
